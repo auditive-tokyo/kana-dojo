@@ -18,7 +18,7 @@ import {
 import clsx from 'clsx';
 import { useClick } from '@/shared/hooks/useAudio';
 import { ReactNode, useEffect, useRef } from 'react';
-import usePreferencesStore from '@/features/Preferences/store/usePreferencesStore';
+import { useInputPreferences } from '@/features/Preferences/facade';
 import { removeLocaleFromPath } from '@/shared/lib/pathUtils';
 
 // ============================================================================
@@ -170,7 +170,7 @@ const Sidebar = () => {
   const pathname = usePathname();
   const pathWithoutLocale = removeLocaleFromPath(pathname);
 
-  const hotkeysOn = usePreferencesStore(state => state.hotkeysOn);
+  const { hotkeysOn } = useInputPreferences();
   const { playClick } = useClick();
 
   const escButtonRef = useRef<HTMLButtonElement | null>(null);
