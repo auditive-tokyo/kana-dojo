@@ -64,26 +64,26 @@ const tileEntryVariants = {
 const gameContentVariants = {
   hidden: {
     opacity: 0,
-    x: 100
+    x: 80
   },
   visible: {
     opacity: 1,
     x: 0,
     transition: {
       type: 'spring' as const,
-      stiffness: 500,
-      damping: 35,
-      mass: 0.5
+      stiffness: 350,
+      damping: 30,
+      mass: 0.7
     }
   },
   exit: {
     opacity: 0,
-    x: -100,
+    x: -80,
     transition: {
       type: 'spring' as const,
-      stiffness: 600,
-      damping: 40,
-      mass: 0.4
+      stiffness: 400,
+      damping: 35,
+      mass: 0.6
     }
   }
 };
