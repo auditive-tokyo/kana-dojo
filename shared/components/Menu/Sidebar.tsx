@@ -68,10 +68,12 @@ const staticSecondaryNavSections: NavSection[] = [
       { href: '/academy', label: 'Guides', icon: BookOpen },
       { href: '/resources', label: 'Resources', icon: Library },
     ],
+    collapsible: true,
   },
   {
     title: 'Tools',
     items: [{ href: '/translate', label: 'Translate', icon: Languages }],
+    collapsible: true,
   },
 ];
 
@@ -301,7 +303,9 @@ const Sidebar = () => {
   // Lazy load experiments
   const [loadedExperiments, setLoadedExperiments] = useState<Experiment[]>([]);
 
-  // Collapse state for experiments section
+  // Collapse state for all collapsible sections
+  const [isAcademyExpanded, setIsAcademyExpanded] = useState(false);
+  const [isToolsExpanded, setIsToolsExpanded] = useState(false);
   const [isExperimentsExpanded, setIsExperimentsExpanded] = useState(false);
 
   useEffect(() => {
@@ -409,26 +413,44 @@ const Sidebar = () => {
       </div>
 
       {/* Secondary Navigation Sections */}
-      {secondaryNavSections.map(section => (
-        <div key={section.title} className='contents'>
-          <SectionHeader
-            title={section.title}
-            collapsible={section.collapsible}
-            isExpanded={isExperimentsExpanded}
-            onToggle={() => setIsExperimentsExpanded(!isExperimentsExpanded)}
-          />
-          {section.items.map(item => (
-            <NavLink
-              key={item.href}
-              item={item}
-              isActive={isActive(item.href)}
-              onClick={playClick}
-              variant='secondary'
-              useSlidingIndicator={true}
+      {secondaryNavSections.map(section => {
+        // Determine which expand state and toggle function to use based on section title
+        const isExpanded =
+          section.title === 'Academy'
+            ? isAcademyExpanded
+            : section.title === 'Tools'
+              ? isToolsExpanded
+              : isExperimentsExpanded;
+        const onToggle =
+          section.title === 'Academy'
+            ? () => setIsAcademyExpanded(!isAcademyExpanded)
+            : section.title === 'Tools'
+              ? () => setIsToolsExpanded(!isToolsExpanded)
+              : () => setIsExperimentsExpanded(!isExperimentsExpanded);
+
+        return (
+          <div key={section.title} className='contents'>
+            <SectionHeader
+              title={section.title}
+              collapsible={section.collapsible}
+              isExpanded={isExpanded}
+              onToggle={onToggle}
             />
-          ))}
-        </div>
-      ))}
+            {/* Only show items if section is expanded or not collapsible */}
+            {(!section.collapsible || isExpanded) &&
+              section.items.map(item => (
+                <NavLink
+                  key={item.href}
+                  item={item}
+                  isActive={isActive(item.href)}
+                  onClick={playClick}
+                  variant='secondary'
+                  useSlidingIndicator={true}
+                />
+              ))}
+          </div>
+        );
+      })}
     </div>
   );
 };
