@@ -19,6 +19,10 @@
 
 ---
 
+## Contributing
+
+Contributions are welcome! Whether you're fixing bugs, adding features, improving documentation, or translating — check out [CONTRIBUTING.md](./CONTRIBUTING.md) to get started. If you're brand new to coding or GitHub, read the [Beginner's Contribution Guide](./docs/CONTRIBUTING-BEGINNERS.md) for a step-by-step walkthrough.
+
 [Live Demo](https://kanadojo.com) · [Documentation](./docs/) · [Contributing](./CONTRIBUTING.md)
 
 </div>
@@ -74,23 +78,20 @@ npm run check
 
 ## Documentation
 
-| Document                                         | Description                                  |
-| ------------------------------------------------ | -------------------------------------------- |
-| [Architecture](./docs/ARCHITECTURE.md)           | Project structure, patterns, and conventions |
-| [UI Design](./docs/UI_DESIGN.md)                 | Theming, styling, and component guidelines   |
-| [Translation Guide](./docs/TRANSLATION_GUIDE.md) | How to translate the app                     |
-| [Troubleshooting](./docs/TROUBLESHOOTING.md)     | Common issues and solutions                  |
-| [All Documentation](./docs/)                     | Complete documentation index                 |
+| Document                                                  | Description                                    |
+| --------------------------------------------------------- | ---------------------------------------------- |
+| [Architecture](./docs/ARCHITECTURE.md)                    | Project structure, patterns, and conventions   |
+| [UI Design](./docs/UI_DESIGN.md)                          | Theming, styling, and component guidelines     |
+| [Translation Guide](./docs/TRANSLATION_GUIDE.md)          | How to translate the app                       |
+| [Troubleshooting](./docs/TROUBLESHOOTING.md)              | Common issues and solutions                    |
+| [Beginner Contributing](./docs/CONTRIBUTING-BEGINNERS.md) | Step-by-step guide for first-time contributors |
+| [All Documentation](./docs/)                              | Complete documentation index                   |
 
 ## Tech Stack
 
 Next.js 15 · React 19 · TypeScript · Tailwind CSS · shadcn/ui · Zustand · Framer Motion
 
 > See [Architecture docs](./docs/ARCHITECTURE.md) for full technical details.
-
-## Contributing
-
-Contributions are welcome! Whether you're fixing bugs, adding features, improving documentation, or translating — check out [CONTRIBUTING.md](./CONTRIBUTING.md) to get started.
 
 ## Star History
 
