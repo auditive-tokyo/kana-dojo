@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 import clsx from 'clsx';
 import {
   Heart,
@@ -12,12 +12,9 @@ import {
   MousePointerClick,
   Keyboard,
 } from 'lucide-react';
-import { buttonBorderStyles } from '@/shared/lib/styles';
-import {
-  DIFFICULTY_CONFIG,
-  type GauntletDifficulty,
-  type GauntletGameMode,
-} from './types';
+import GauntletTypeAnswer from './GauntletTypeAnswer';
+import GauntletWordBuildingAnswer from './GauntletWordBuildingAnswer';
+import { type GauntletDifficulty, type GauntletGameMode } from './types';
 
 interface ActiveGameProps<T> {
   // Dojo type for layout customization
@@ -44,16 +41,20 @@ interface ActiveGameProps<T> {
 
   // Game mode
   gameMode: GauntletGameMode;
+
+  // Type mode
   inputPlaceholder: string;
   userAnswer: string;
   setUserAnswer: (answer: string) => void;
-  onSubmit: (e?: React.FormEvent) => void;
-  getCorrectAnswer: (question: T, isReverse?: boolean) => string;
+
+  // Actions
+  onCancel: () => void;
+  onSubmit: () => void;
+  onPickSubmit: (option: string) => void;
 
   // Pick mode
   shuffledOptions: string[];
   wrongSelectedAnswers: string[];
-  onOptionClick: (option: string) => void;
   renderOption?: (
     option: string,
     items: T[],
@@ -62,17 +63,15 @@ interface ActiveGameProps<T> {
   items: T[];
 
   // Feedback (kept for API compatibility but no longer displayed)
+  getCorrectAnswer: (question: T, isReverse?: boolean) => string;
   lastAnswerCorrect: boolean | null;
-  currentStreak: number;
   correctSinceLastRegen: number;
   regenThreshold: number;
 
   // Stats
   correctAnswers: number;
   wrongAnswers: number;
-
-  // Actions
-  onCancel: () => void;
+  currentStreak: number;
 }
 
 // Stat item component matching ReturnFromGame
@@ -95,7 +94,9 @@ export default function ActiveGame<T>({
   totalQuestions,
   lives,
   maxLives,
-  difficulty,
+  difficulty: _difficulty,
+  lifeJustGained: _lifeJustGained,
+  lifeJustLost: _lifeJustLost,
   elapsedTime: _elapsedTime,
   currentQuestion,
   renderQuestion,
@@ -105,54 +106,21 @@ export default function ActiveGame<T>({
   userAnswer,
   setUserAnswer,
   onSubmit,
-  getCorrectAnswer: _getCorrectAnswer,
+  onPickSubmit,
   shuffledOptions,
   wrongSelectedAnswers,
-  onOptionClick,
   renderOption,
   items,
+  getCorrectAnswer: _getCorrectAnswer,
   lastAnswerCorrect: _lastAnswerCorrect,
-  currentStreak,
   correctSinceLastRegen: _correctSinceLastRegen,
   regenThreshold: _regenThreshold,
   correctAnswers,
   wrongAnswers,
+  currentStreak,
   onCancel,
 }: ActiveGameProps<T>) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
-
   const progressPercent = Math.round((currentIndex / totalQuestions) * 100);
-
-  // Focus input for Type mode
-  useEffect(() => {
-    if (gameMode === 'Type' && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [currentQuestion, gameMode]);
-
-  // Keyboard shortcuts for Pick mode (1, 2, 3 keys)
-  useEffect(() => {
-    if (gameMode !== 'Pick') return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const keyMap: Record<string, number> = {
-        Digit1: 0,
-        Digit2: 1,
-        Digit3: 2,
-        Numpad1: 0,
-        Numpad2: 1,
-        Numpad3: 2,
-      };
-      const index = keyMap[event.code];
-      if (index !== undefined && index < shuffledOptions.length) {
-        buttonRefs.current[index]?.click();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameMode, shuffledOptions.length]);
 
   // Get game mode icon
   const ModeIcon = gameMode === 'Pick' ? MousePointerClick : Keyboard;
@@ -245,151 +213,24 @@ export default function ActiveGame<T>({
 
         {/* Answer Area - layout based on dojoType and gameMode */}
         {gameMode === 'Type' ? (
-          /* Type mode - same for all dojos */
-          <form
+          <GauntletTypeAnswer
+            value={userAnswer}
+            onChange={setUserAnswer}
             onSubmit={onSubmit}
-            className='flex w-full max-w-lg flex-col items-center gap-4'
-          >
-            <input
-              ref={inputRef}
-              type='text'
-              value={userAnswer}
-              onChange={e => setUserAnswer(e.target.value)}
-              placeholder={inputPlaceholder}
-              className={clsx(
-                'w-full text-center text-2xl lg:text-4xl',
-                'border-b-2 bg-transparent pb-2 outline-none',
-                'text-[var(--secondary-color)]',
-                'border-[var(--border-color)] focus:border-[var(--main-color)]',
-              )}
-              autoComplete='off'
-              autoCorrect='off'
-              autoCapitalize='off'
-              spellCheck='false'
-            />
-            <button
-              type='submit'
-              disabled={!userAnswer.trim()}
-              className={clsx(
-                'flex h-12 w-full flex-row items-center justify-center gap-2 px-6',
-                'rounded-2xl transition-colors duration-200',
-                'border-b-6 font-medium shadow-sm',
-                userAnswer.trim()
-                  ? 'border-[var(--main-color-accent)] bg-[var(--main-color)] text-[var(--background-color)] hover:cursor-pointer'
-                  : 'cursor-not-allowed border-[var(--border-color)] bg-[var(--card-color)] text-[var(--border-color)]',
-              )}
-            >
-              Submit
-            </button>
-          </form>
-        ) : dojoType === 'kana' ? (
-          /* Kana Pick mode - horizontal row layout matching Kana/Pick.tsx */
-          <div className='flex w-full flex-row gap-5 sm:justify-evenly sm:gap-0'>
-            {shuffledOptions.map((option, i) => {
-              const isWrong = wrongSelectedAnswers.includes(option);
-              return (
-                <button
-                  ref={elem => {
-                    buttonRefs.current[i] = elem;
-                  }}
-                  key={option + i}
-                  type='button'
-                  disabled={isWrong}
-                  className={clsx(
-                    'relative flex w-full flex-row items-center justify-center gap-1 pt-3 pb-6 text-5xl font-semibold sm:w-1/5',
-                    buttonBorderStyles,
-                    'border-b-4',
-                    isWrong &&
-                      'border-[var(--border-color)] text-[var(--border-color)] hover:border-[var(--border-color)] hover:bg-[var(--card-color)]',
-                    !isWrong &&
-                      'border-[var(--secondary-color)]/50 text-[var(--secondary-color)] hover:border-[var(--secondary-color)]',
-                  )}
-                  onClick={() => onOptionClick(option)}
-                  lang={isReverseActive ? 'ja' : undefined}
-                >
-                  <span>
-                    {renderOption
-                      ? renderOption(option, items, isReverseActive)
-                      : option}
-                  </span>
-                  <span
-                    className={clsx(
-                      'absolute top-1/2 right-4 hidden h-5 min-w-5 -translate-y-1/2 items-center justify-center rounded-full bg-[var(--border-color)] px-1 text-xs leading-none lg:inline-flex',
-                      isWrong
-                        ? 'text-[var(--border-color)]'
-                        : 'text-[var(--secondary-color)]',
-                    )}
-                  >
-                    {i + 1}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+            placeholder={inputPlaceholder}
+          />
         ) : (
-          /* Kanji/Vocabulary Pick mode - vertical stacked layout matching their Pick.tsx */
-          <div
-            className={clsx(
-              'flex w-full flex-col items-center gap-6',
-              dojoType === 'kanji' &&
-                isReverseActive &&
-                'md:flex-row md:justify-evenly',
-            )}
-          >
-            {shuffledOptions.map((option, i) => {
-              const isWrong = wrongSelectedAnswers.includes(option);
-              return (
-                <button
-                  ref={elem => {
-                    buttonRefs.current[i] = elem;
-                  }}
-                  key={option + i}
-                  type='button'
-                  disabled={isWrong}
-                  className={clsx(
-                    'flex flex-row items-center gap-1.5 rounded-xl py-5',
-                    buttonBorderStyles,
-                    'active:scale-95 active:duration-200 md:active:scale-98',
-                    'border-b-4',
-                    // Width and alignment based on dojo and mode
-                    dojoType === 'kanji' && isReverseActive
-                      ? 'w-full justify-center text-5xl md:w-1/4 lg:w-1/5'
-                      : 'w-full justify-start pl-8 text-3xl md:w-1/2 md:text-4xl',
-                    // Colors
-                    isWrong &&
-                      'border-[var(--border-color)] text-[var(--border-color)] hover:border-[var(--border-color)] hover:bg-[var(--card-color)]',
-                    !isWrong &&
-                      'border-[var(--secondary-color)]/50 text-[var(--secondary-color)] hover:border-[var(--secondary-color)]',
-                  )}
-                  onClick={() => onOptionClick(option)}
-                  lang={isReverseActive ? 'ja' : undefined}
-                >
-                  <span
-                    className={clsx(
-                      dojoType === 'kanji' && isReverseActive
-                        ? ''
-                        : 'flex-1 text-left',
-                    )}
-                  >
-                    {renderOption
-                      ? renderOption(option, items, isReverseActive)
-                      : option}
-                  </span>
-                  <span
-                    className={clsx(
-                      'hidden rounded-full bg-[var(--border-color)] px-1 text-xs lg:inline',
-                      dojoType === 'kanji' && isReverseActive ? '' : 'mr-4',
-                      isWrong
-                        ? 'text-[var(--border-color)]'
-                        : 'text-[var(--secondary-color)]',
-                    )}
-                  >
-                    {i + 1}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          <GauntletWordBuildingAnswer
+            dojoType={dojoType}
+            options={shuffledOptions}
+            disabledOptions={wrongSelectedAnswers}
+            onSubmit={onPickSubmit}
+            renderOption={
+              renderOption
+                ? option => renderOption(option, items, isReverseActive)
+                : undefined
+            }
+          />
         )}
       </div>
     </div>

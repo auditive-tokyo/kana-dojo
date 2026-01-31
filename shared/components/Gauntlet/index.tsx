@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { useRouter } from '@/core/i18n/routing';
 import { Random } from 'random-js';
@@ -15,7 +15,6 @@ import ActiveGame from './ActiveGame';
 import ResultsScreen from './ResultsScreen';
 import {
   DIFFICULTY_CONFIG,
-  REPETITION_OPTIONS,
   type GauntletConfig,
   type GauntletDifficulty,
   type GauntletGameMode,
@@ -385,91 +384,86 @@ export default function Gauntlet<T>({ config, onCancel }: GauntletProps<T>) {
     ],
   );
 
-  // Process correct answer
-  const processCorrectAnswer = useCallback(() => {
-    playCorrect();
-    setLastAnswerCorrect(true);
-
+  const recordAnswerTime = useCallback(() => {
     const now = Date.now();
     const timeTaken = now - lastAnswerTime.current;
     lastAnswerTime.current = now;
     setAnswerTimes(prev => [...prev, timeTaken]);
+  }, []);
 
-    setCorrectAnswers(prev => prev + 1);
-    setCurrentStreak(prev => {
-      const newStreak = prev + 1;
-      if (newStreak > bestStreak) {
-        setBestStreak(newStreak);
-      }
-      return newStreak;
-    });
-
-    // Update character stats
-    if (currentQuestion) {
-      const charId = getItemId(currentQuestion.item);
-      setCharacterStats(prev => ({
-        ...prev,
-        [charId]: {
-          correct: (prev[charId]?.correct || 0) + 1,
-          wrong: prev[charId]?.wrong || 0,
-        },
-      }));
-    }
-
-    // Check for life regeneration (Normal mode only)
-    const canRegen = DIFFICULTY_CONFIG[difficulty].regenerates;
-    if (canRegen && lives < maxLives) {
-      const newCorrectSinceRegen = correctSinceLastRegen + 1;
-      if (newCorrectSinceRegen >= regenThreshold) {
-        setLives(prev => Math.min(prev + 1, maxLives));
-        setCorrectSinceLastRegen(0);
-        setLivesRegenerated(prev => prev + 1);
-        setLifeJustGained(true);
-        setTimeout(() => setLifeJustGained(false), 500);
-      } else {
-        setCorrectSinceLastRegen(newCorrectSinceRegen);
-      }
-    }
-
-    // Clear feedback and move to next
-    setTimeout(() => {
-      setLastAnswerCorrect(null);
+  const advanceToNextQuestion = useCallback(
+    (newLives: number) => {
       setUserAnswer('');
       setWrongSelectedAnswers([]);
+      setLastAnswerCorrect(null);
 
-      // Check if game is complete
+      if (newLives <= 0) {
+        endGame(false);
+        return;
+      }
+
       if (currentIndex + 1 >= totalQuestions) {
         endGame(true);
-      } else {
-        setCurrentIndex(prev => prev + 1);
+        return;
       }
-    }, 300);
-  }, [
-    playCorrect,
-    currentQuestion,
-    getItemId,
-    difficulty,
-    lives,
-    maxLives,
-    correctSinceLastRegen,
-    regenThreshold,
-    currentIndex,
-    totalQuestions,
-    endGame,
-    bestStreak,
-  ]);
 
-  // Process wrong answer
-  const processWrongAnswer = useCallback(() => {
-    playError();
-    setLastAnswerCorrect(false);
+      setCurrentIndex(prev => prev + 1);
+    },
+    [currentIndex, endGame, totalQuestions],
+  );
 
-    setWrongAnswers(prev => prev + 1);
-    setCurrentStreak(0);
-    setCorrectSinceLastRegen(0); // Reset regen progress on wrong answer
+  const submitAnswer = useCallback(
+    (isCorrect: boolean) => {
+      if (!currentQuestion) return;
 
-    // Update character stats
-    if (currentQuestion) {
+      recordAnswerTime();
+
+      if (isCorrect) {
+        playCorrect();
+        setLastAnswerCorrect(true);
+
+        setCorrectAnswers(prev => prev + 1);
+        setCurrentStreak(prev => {
+          const newStreak = prev + 1;
+          if (newStreak > bestStreak) {
+            setBestStreak(newStreak);
+          }
+          return newStreak;
+        });
+
+        const charId = getItemId(currentQuestion.item);
+        setCharacterStats(prev => ({
+          ...prev,
+          [charId]: {
+            correct: (prev[charId]?.correct || 0) + 1,
+            wrong: prev[charId]?.wrong || 0,
+          },
+        }));
+
+        const canRegen = DIFFICULTY_CONFIG[difficulty].regenerates;
+        if (canRegen && lives < maxLives) {
+          const newCorrectSinceRegen = correctSinceLastRegen + 1;
+          if (newCorrectSinceRegen >= regenThreshold) {
+            setLives(prev => Math.min(prev + 1, maxLives));
+            setCorrectSinceLastRegen(0);
+            setLivesRegenerated(prev => prev + 1);
+            setLifeJustGained(true);
+            setTimeout(() => setLifeJustGained(false), 500);
+          } else {
+            setCorrectSinceLastRegen(newCorrectSinceRegen);
+          }
+        }
+
+        advanceToNextQuestion(lives);
+        return;
+      }
+
+      playError();
+      setLastAnswerCorrect(false);
+      setWrongAnswers(prev => prev + 1);
+      setCurrentStreak(0);
+      setCorrectSinceLastRegen(0);
+
       const charId = getItemId(currentQuestion.item);
       setCharacterStats(prev => ({
         ...prev,
@@ -478,54 +472,44 @@ export default function Gauntlet<T>({ config, onCancel }: GauntletProps<T>) {
           wrong: (prev[charId]?.wrong || 0) + 1,
         },
       }));
-    }
 
-    // Lose a life
-    const newLives = lives - 1;
-    setLives(newLives);
-    setLifeJustLost(true);
-    setTimeout(() => setLifeJustLost(false), 500);
+      const newLives = lives - 1;
+      setLives(newLives);
+      setLifeJustLost(true);
+      setTimeout(() => setLifeJustLost(false), 500);
 
-    // Check for game over
-    if (newLives <= 0) {
-      setTimeout(() => {
-        endGame(false);
-      }, 500);
-    } else {
-      setTimeout(() => setLastAnswerCorrect(null), 800);
-    }
-  }, [playError, currentQuestion, getItemId, lives, endGame]);
-
-  // Handle answer submission (Type mode)
-  const handleSubmit = useCallback(
-    (e?: React.FormEvent) => {
-      e?.preventDefault();
-      if (!currentQuestion || !userAnswer.trim()) return;
-
-      const isCorrect = checkAnswer(
-        currentQuestion.item,
-        userAnswer.trim(),
-        isReverseActive,
-      );
-
-      if (isCorrect) {
-        processCorrectAnswer();
-      } else {
-        processWrongAnswer();
-      }
+      advanceToNextQuestion(newLives);
     },
     [
+      advanceToNextQuestion,
+      bestStreak,
+      correctSinceLastRegen,
       currentQuestion,
-      userAnswer,
-      checkAnswer,
-      isReverseActive,
-      processCorrectAnswer,
-      processWrongAnswer,
+      difficulty,
+      getItemId,
+      lives,
+      maxLives,
+      playCorrect,
+      playError,
+      recordAnswerTime,
+      regenThreshold,
     ],
   );
 
-  // Handle option click (Pick mode)
-  const handleOptionClick = useCallback(
+  const handleSubmit = useCallback(() => {
+    if (!currentQuestion) return;
+    const trimmed = userAnswer.trim();
+    if (!trimmed) return;
+
+    const isCorrect = checkAnswer(
+      currentQuestion.item,
+      trimmed,
+      isReverseActive,
+    );
+    submitAnswer(isCorrect);
+  }, [checkAnswer, currentQuestion, isReverseActive, submitAnswer, userAnswer]);
+
+  const handlePickSubmit = useCallback(
     (selectedOption: string) => {
       if (!currentQuestion || !getCorrectOption) return;
 
@@ -535,20 +519,9 @@ export default function Gauntlet<T>({ config, onCancel }: GauntletProps<T>) {
       );
       const isCorrect = selectedOption === correctOption;
 
-      if (isCorrect) {
-        processCorrectAnswer();
-      } else {
-        setWrongSelectedAnswers(prev => [...prev, selectedOption]);
-        processWrongAnswer();
-      }
+      submitAnswer(isCorrect);
     },
-    [
-      currentQuestion,
-      getCorrectOption,
-      isReverseActive,
-      processCorrectAnswer,
-      processWrongAnswer,
-    ],
+    [currentQuestion, getCorrectOption, isReverseActive, submitAnswer],
   );
 
   // Handle cancel
@@ -631,7 +604,7 @@ export default function Gauntlet<T>({ config, onCancel }: GauntletProps<T>) {
       getCorrectAnswer={getCorrectAnswer}
       shuffledOptions={shuffledOptions}
       wrongSelectedAnswers={wrongSelectedAnswers}
-      onOptionClick={handleOptionClick}
+      onPickSubmit={handlePickSubmit}
       renderOption={renderOption}
       items={items}
       lastAnswerCorrect={lastAnswerCorrect}
