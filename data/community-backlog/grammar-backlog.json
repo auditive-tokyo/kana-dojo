@@ -371,15 +371,18 @@
   },
   {
     "id": 75,
-    "text": "\"〜ことにする\" means \"decide to...\"."
+    "text": "\"〜ことにする\" means \"decide to...\".",
+    "completed": true
   },
   {
     "id": 76,
-    "text": "\"〜ことになっている\" means \"it is decided/arranged that...\"."
+    "text": "\"〜ことになっている\" means \"it is decided/arranged that...\".",
+    "completed": true
   },
   {
     "id": 77,
-    "text": "\"〜わりに\" means \"despite / considering...\"."
+    "text": "\"〜わりに\" means \"despite / considering...\".",
+    "issued": true
   },
   {
     "id": 78,
