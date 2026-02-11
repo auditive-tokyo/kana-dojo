@@ -211,6 +211,11 @@ module.exports = {
       difficulty: 'Easy (good first issue!)',
       instructionsHeader: '### 📝 Instructions',
       footer: "### 🚀 Quick Info\n\n| | |\n|---|---|\n| **Difficulty** | Beginner / Easy |\n| **Time** | < 1 minute |\n| **Language** | TypeScript, JSON |\n| **Framework** | Next.js, React |\n| **Good for** | First-time contributors, Hacktoberfest |\n\n> **No coding experience required!** This is a simple JSON/data file edit — perfect for your first open source contribution.\n\n**Questions?** Comment below and we'll help! 🙌\n\n_This is a beginner-friendly, good first issue for first-time open source contributors. No coding experience needed — just edit a JSON file! See our [Contributing Guide](../blob/main/.github/CONTRIBUTING.md) for step-by-step instructions._",
+      // Welcome comment posted on freshly created issues for engagement signals
+      welcomeComment:
+        "👋 **This issue is up for grabs!** Comment below to claim it and get assigned.\n\nNo coding experience needed — just a simple JSON file edit. Check the instructions above and our [Contributing Guide](../blob/main/.github/CONTRIBUTING.md) to get started!\n\nがんばって! 💪",
+      // Community Contributions milestone number (for issue discoverability)
+      milestoneNumber: 1,
       // Common instruction steps (used by buildInstructions)
       steps: {
         addComma: 'Make sure to add a comma after the previous last item',
